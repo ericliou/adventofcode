@@ -78,6 +78,6 @@
         gears (flatten (map-indexed gears lines))]
     (transduce (comp (map (adj-numbers nums))
                      (filter #(= 2 (count %)))
-                     (map (partial transduce (map :num) *)))
+                     (map #(apply * (map :num %))))
                +
                gears)))

@@ -1,12 +1,9 @@
 (ns aoc.day14
-  (:require [clojure.string :as str]
-            [clojure.core.matrix :as matrix]))
+  (:require [clojure.string :as str]))
 
 (def ex
   "498,4 -> 498,6 -> 496,6
 503,4 -> 502,4 -> 502,9 -> 494,9")
-
-(defn process-input [s])
 
 (defn parse-int [s] (Integer/parseInt s))
 
@@ -30,23 +27,25 @@
      (or c1 c2))))
 
 
-;; Performance ideas:
-;; - transducer
-  ;; transduce has improved performance from 1200ms to 790ms
-  ;;
-;; - coords data structure, index by x and sort by y
+;; Performance improvement attempts on the fn `highest`:
+;;
+;; - threading vs transducer
+;;   transduce improved from 1200ms to 790ms
+;;
+;; - experiment with coords data structure, index by x and sort by y
+;;   painful, the rest is too coupled with it
 ;;
 ;; - reduce number of calls of the fn highest
-;; reduced from 750ms to 370ms
+;;   reduced from 750ms to 370ms
 ;;
 ;; - remove first and second, and changed to destructuring
-;; reduced from 370ms to 240ms
+;;   reduced from 370ms to 240ms
 ;;
 ;; - union vs conj
-;; 270 vs 250
+;;   270 vs 250 (interesting)
 ;;
 ;; - pmap vs map (instead of filter)
-;; 2913ms vs 655ms (!)
+;;   2913ms vs 655ms (!)
 
 (defn highest
   "Highest under y inclusive."
@@ -65,9 +64,10 @@
            (apply min-key second)))
 
 (def rocks-coords
-(->> ex
-   #_(slurp "resource/input/day14.txt")
+(->> ;; ex
+    (slurp "resource/input/day14.txt")
        str/split-lines
+       (take 1) ;; small test set
        (mapcat (fn [s]
                  (->> (str/split s #" -> ")
                       (map #(mapv parse-int (str/split % #",")))
@@ -130,13 +130,8 @@
 
 (defn drop-sand-fn [stop? highest-surface blocked?]
 
-  #_(println "\n iter" {:x x :y y :sands sands :iter iter :n n})
   (fn [[x y :as coords] sands iter]
     (let [[hx hy :as highest] (highest-surface sands coords)]
-
-    #_(when (> iter 100000)
-      (print-cave sands rocks)
-      (throw (ex-info "too many iterations" {:x x :y y :sands sands :iter iter :higest highest})))
 
       (if (stop? highest)
         (do #_(print-cave sands rocks)
@@ -183,10 +178,10 @@
   )
 
 (comment "part 2"
-         (time (dotimes [n 100] ((drop-sand-fn source-blocked? highest-surface-finite blocked-finite?) source-coord #{} 0)));; => 23390
+         ;; takes a really long time, needs improvement, only using single thread
+         (time ((drop-sand-fn source-blocked? highest-surface-finite blocked-finite?) source-coord #{} 0))
+         #_(time (dotimes [n 100] ((drop-sand-fn source-blocked? highest-surface-finite blocked-finite?) source-coord #{} 0)));; => 23390
 )
-(/ 889 60.0)
-
 
 (defn burn-cpu [op secs]
   (let [start (System/nanoTime)]
